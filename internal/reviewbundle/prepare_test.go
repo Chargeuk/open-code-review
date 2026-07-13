@@ -92,6 +92,9 @@ func TestPrepareWorkspaceBuildsDeterministicCompleteBundle(t *testing.T) {
 		if file.RuleID == "" {
 			t.Errorf("file missing rule id: %+v", file)
 		}
+		if !file.Reviewable && (file.Patch != "" || len(file.Hunks) != 0) {
+			t.Errorf("excluded file leaked review evidence: %+v", file)
+		}
 	}
 	assertPreparedStatus(t, files, "base.go", "modified", true, "")
 	assertPreparedStatus(t, files, "staged.go", "modified", true, "")

@@ -138,6 +138,13 @@ func buildBundleEvidence(
 		if change.IsDeleted {
 			contentSHA256 = ""
 		}
+		patch := change.Diff
+		if !reviewable {
+			// Preserve exclusion accounting without placing ignored source text in
+			// the external reviewer's model context.
+			patch = ""
+			hunks = make([]Hunk, 0)
+		}
 
 		bundle.Files = append(bundle.Files, File{
 			Path:          path,
@@ -149,7 +156,7 @@ func buildBundleEvidence(
 			Deletions:     change.Deletions,
 			ContentSHA256: contentSHA256,
 			RuleID:        ruleID,
-			Patch:         change.Diff,
+			Patch:         patch,
 			Hunks:         hunks,
 		})
 		bundle.Summary.TotalFiles++
