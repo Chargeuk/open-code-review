@@ -75,7 +75,7 @@ func (p *CodeSearchProvider) buildGrepArgs(searchText string, caseSensitive bool
 	cmdArgs = append(cmdArgs, "-e", searchText)
 
 	if ref := p.FileReader.Ref; ref != "" {
-		cmdArgs = append(cmdArgs, "--end-of-options", ref)
+		cmdArgs = append(cmdArgs, ref)
 	}
 
 	cmdArgs = append(cmdArgs, "--")
@@ -202,7 +202,17 @@ func (p *CodeSearchProvider) gitGrep(ctx context.Context, searchText string, cas
 		fileMatches[fname] = append(fileMatches[fname], m)
 	}
 
+	allowedPaths := make([]string, 0, len(fileOrder))
 	for _, path := range fileOrder {
+		if p.FileReader.PathAllowed == nil || p.FileReader.PathAllowed(path) {
+			allowedPaths = append(allowedPaths, path)
+		}
+	}
+	if len(allowedPaths) == 0 {
+		return "No matches found", nil
+	}
+
+	for _, path := range allowedPaths {
 		matches := fileMatches[path]
 		sb.WriteString(fmt.Sprintf("File: %s\nMatch lines: %d\n", path, len(matches)))
 		for _, m := range matches {

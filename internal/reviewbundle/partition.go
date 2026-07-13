@@ -137,12 +137,13 @@ func buildDiffPartition(
 	maxBundleSize int64,
 ) (*Bundle, []byte, error) {
 	partition := &Bundle{
-		SchemaVersion:  BundleSchemaVersion,
-		Target:         full.Target,
-		WorkspaceState: full.WorkspaceState,
-		Rules:          make(map[string]Rule),
-		Files:          append([]File(nil), files...),
-		Contract:       DefaultContract(),
+		SchemaVersion:   BundleSchemaVersion,
+		Target:          full.Target,
+		WorkspaceState:  full.WorkspaceState,
+		ExcludePatterns: append([]string(nil), full.ExcludePatterns...),
+		Rules:           make(map[string]Rule),
+		Files:           append([]File(nil), files...),
+		Contract:        DefaultContract(),
 		Warnings: []ProtocolNotice{{
 			Code: "diff_partition", Message: "deterministic large-diff partition",
 		}},

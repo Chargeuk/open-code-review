@@ -35,8 +35,9 @@ func TestEmbeddedSchemasAreStrictVersionedJSON(t *testing.T) {
 
 func TestBundleJSONUsesStableProtocolFields(t *testing.T) {
 	bundle := Bundle{
-		SchemaVersion: BundleSchemaVersion,
-		BundleID:      "sha256:bundle",
+		SchemaVersion:   BundleSchemaVersion,
+		BundleID:        "sha256:bundle",
+		ExcludePatterns: []string{"planning/**"},
 		Target: Target{
 			Mode:       TargetWorkspace,
 			BaseSHA:    "base",
@@ -69,6 +70,7 @@ func TestBundleJSONUsesStableProtocolFields(t *testing.T) {
 	for _, field := range []string{
 		`"schema_version":"codex-review-bundle/v1"`,
 		`"bundle_id":"sha256:bundle"`,
+		`"exclude_patterns":["planning/**"]`,
 		`"diff_sha256":"sha256:diff"`,
 		`"content_sha256":"sha256:content"`,
 		`"line_numbers":"one_based_new_file"`,

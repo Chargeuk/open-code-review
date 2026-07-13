@@ -57,8 +57,9 @@ type FileReader struct {
 	Mode    ReviewMode
 	// Ref is the git ref to use for ModeRange (--to) or ModeCommit (--commit).
 	// Empty for ModeWorkspace.
-	Ref    string
-	Runner *gitcmd.Runner
+	Ref         string
+	Runner      *gitcmd.Runner
+	PathAllowed func(string) bool
 }
 
 // Read returns the full content of a file path (relative to RepoDir),
@@ -66,6 +67,9 @@ type FileReader struct {
 // - Workspace: reads directly from the filesystem.
 // - Range / Commit: uses `git show <Ref>:<path>` to read at the given ref.
 func (fr *FileReader) Read(ctx context.Context, path string) (string, error) {
+	if fr.PathAllowed != nil && !fr.PathAllowed(filepath.ToSlash(path)) {
+		return "", fmt.Errorf("file path %q is excluded", path)
+	}
 	switch fr.Mode {
 	case ModeWorkspace:
 		return fr.readFromDisk(path)
@@ -137,6 +141,9 @@ func (fr *FileReader) readFromGitShow(parentCtx context.Context, path string) (s
 // ReadLines returns a window of lines from the file plus the total line count.
 // startLine is 1-based; maxLines is the maximum number of lines to collect.
 func (fr *FileReader) ReadLines(ctx context.Context, path string, startLine, maxLines int) ([]string, int, error) {
+	if fr.PathAllowed != nil && !fr.PathAllowed(filepath.ToSlash(path)) {
+		return nil, 0, fmt.Errorf("file path %q is excluded", path)
+	}
 	switch fr.Mode {
 	case ModeWorkspace:
 		return fr.readLinesFromDisk(path, startLine, maxLines)

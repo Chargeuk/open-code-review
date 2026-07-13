@@ -23,15 +23,16 @@ const (
 
 // Bundle is the complete deterministic input for an external reviewer.
 type Bundle struct {
-	SchemaVersion  string           `json:"schema_version"`
-	BundleID       string           `json:"bundle_id"`
-	Target         Target           `json:"target"`
-	WorkspaceState *WorkspaceState  `json:"workspace_state,omitempty"`
-	Summary        Summary          `json:"summary"`
-	Rules          map[string]Rule  `json:"rules"`
-	Files          []File           `json:"files"`
-	Contract       Contract         `json:"contract"`
-	Warnings       []ProtocolNotice `json:"warnings,omitempty"`
+	SchemaVersion   string           `json:"schema_version"`
+	BundleID        string           `json:"bundle_id"`
+	Target          Target           `json:"target"`
+	WorkspaceState  *WorkspaceState  `json:"workspace_state,omitempty"`
+	ExcludePatterns []string         `json:"exclude_patterns,omitempty"`
+	Summary         Summary          `json:"summary"`
+	Rules           map[string]Rule  `json:"rules"`
+	Files           []File           `json:"files"`
+	Contract        Contract         `json:"contract"`
+	Warnings        []ProtocolNotice `json:"warnings,omitempty"`
 }
 
 // Target records both requested refs and their resolved immutable identities.

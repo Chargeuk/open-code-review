@@ -9,6 +9,7 @@
     "bundle_id": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
     "target": {"$ref": "#/$defs/target"},
     "workspace_state": {"$ref": "#/$defs/workspace_state"},
+    "exclude_patterns": {"type": "array", "items": {"type": "string"}},
     "summary": {"$ref": "#/$defs/summary"},
     "rules": {
       "type": "object",

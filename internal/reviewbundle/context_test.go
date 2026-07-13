@@ -119,6 +119,49 @@ func TestContextFindAndSearchUseTargetAwareTools(t *testing.T) {
 	}
 }
 
+func TestRangeContextCannotReopenExcludedPaths(t *testing.T) {
+	repository := initPrepareRepository(t)
+	writeTargetFile(t, repository, "planning/notes.md", "private planning marker\n")
+	writeTargetFile(t, repository, "docs/notes.md", "public documentation marker\n")
+	runTargetGit(t, repository, "add", "planning/notes.md", "docs/notes.md")
+	runTargetGit(t, repository, "commit", "-m", "context fixtures")
+	base := strings.TrimSpace(runTargetGit(t, repository, "rev-parse", "HEAD"))
+	writeTargetFile(t, repository, "base.go", "package sample\n\nvar changed = true\n")
+	runTargetGit(t, repository, "add", "base.go")
+	runTargetGit(t, repository, "commit", "-m", "target")
+	head := strings.TrimSpace(runTargetGit(t, repository, "rev-parse", "HEAD"))
+	bundle, _, err := Prepare(context.Background(), PrepareOptions{
+		RepoDir:       repository,
+		Target:        TargetSpec{From: base, To: head},
+		Resolver:      detailResolverStub{},
+		FileFilter:    &rules.FileFilter{Exclude: []string{"planning/**"}},
+		GitRunner:     gitcmd.New(2),
+		MaxBundleSize: DefaultMaxBundleBytes,
+	})
+	if err != nil {
+		t.Fatalf("Prepare() error = %v", err)
+	}
+	service := NewContextService(repository, bundle, gitcmd.New(2))
+
+	_, err = service.Read(context.Background(), "planning/notes.md", 1, 5)
+	var protocolError *ProtocolError
+	if !errors.As(err, &protocolError) || protocolError.Code != "excluded_path" {
+		t.Fatalf("Read(excluded path) error = %v, want excluded_path", err)
+	}
+	found, err := service.Find(context.Background(), "notes.md", true)
+	if err != nil || !strings.Contains(found.Result, "docs/notes.md") || strings.Contains(found.Result, "planning/notes.md") {
+		t.Fatalf("Find(excluded path) = %+v, %v", found, err)
+	}
+	searched, err := service.Search(context.Background(), "marker", true, false, nil)
+	if err != nil || !strings.Contains(searched.Result, "docs/notes.md") || strings.Contains(searched.Result, "planning/notes.md") || strings.Contains(searched.Result, "private planning") {
+		t.Fatalf("Search(excluded path) = %+v, %v", searched, err)
+	}
+	read, err := service.Read(context.Background(), "docs/notes.md", 1, 5)
+	if err != nil || !strings.Contains(read.Result, "public documentation marker") {
+		t.Fatalf("Read(allowed path) = %+v, %v", read, err)
+	}
+}
+
 func TestScanContextStaysInsideBundle(t *testing.T) {
 	repository := initPrepareRepository(t)
 	writeTargetFile(t, repository, "only.go", "package sample\n\nfunc InBundle() {}\n")

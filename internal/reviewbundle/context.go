@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/open-code-review/open-code-review/internal/config/rules"
 	"github.com/open-code-review/open-code-review/internal/gitcmd"
 	"github.com/open-code-review/open-code-review/internal/tool"
 )
@@ -22,10 +23,10 @@ type ContextResult struct {
 
 // ContextService exposes target-aware read-only repository tools.
 type ContextService struct {
-	repoDir   string
-	bundle    *Bundle
-	runner    *gitcmd.Runner
-	reader *tool.FileReader
+	repoDir string
+	bundle  *Bundle
+	runner  *gitcmd.Runner
+	reader  *tool.FileReader
 }
 
 // NewContextService binds all subsequent operations to one bundle identity.
@@ -51,11 +52,34 @@ func NewContextService(
 		bundle:  bundle,
 		runner:  runner,
 		reader: &tool.FileReader{
-			RepoDir: repoDir,
-			Mode:    mode,
-			Ref:     ref,
-			Runner:  runner,
+			RepoDir:     repoDir,
+			Mode:        mode,
+			Ref:         ref,
+			Runner:      runner,
+			PathAllowed: bundlePathAllowed(bundle),
 		},
+	}
+}
+
+func bundlePathAllowed(bundle *Bundle) func(string) bool {
+	filter := &rules.FileFilter{}
+	if bundle != nil {
+		filter.Exclude = append(filter.Exclude, bundle.ExcludePatterns...)
+	}
+	return func(path string) bool {
+		cleaned, safe := cleanProtocolPath(path)
+		if !safe || filter.IsUserExcluded(cleaned) {
+			return false
+		}
+		if bundle == nil {
+			return true
+		}
+		for _, file := range bundle.Files {
+			if file.Path == cleaned && !file.Reviewable {
+				return false
+			}
+		}
+		return true
 	}
 }
 
@@ -72,6 +96,9 @@ func (service *ContextService) Read(
 	cleaned, safe := cleanProtocolPath(path)
 	if !safe {
 		return ContextResult{}, &ProtocolError{Code: "path_escape", Message: "path must stay inside the repository"}
+	}
+	if !service.reader.PathAllowed(cleaned) {
+		return ContextResult{}, &ProtocolError{Code: "excluded_path", Message: "path was excluded from review context"}
 	}
 	if startLine <= 0 {
 		startLine = 1

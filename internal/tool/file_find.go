@@ -41,6 +41,9 @@ func (p *FileFindProvider) Execute(ctx context.Context, args map[string]any) (st
 
 	var matched []string
 	for _, f := range files {
+		if p.FileReader.PathAllowed != nil && !p.FileReader.PathAllowed(f) {
+			continue
+		}
 		base := f
 		if idx := strings.LastIndex(f, "/"); idx != -1 {
 			base = f[idx+1:]

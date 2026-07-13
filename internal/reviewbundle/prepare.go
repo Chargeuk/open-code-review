@@ -65,12 +65,13 @@ func Prepare(ctx context.Context, options PrepareOptions) (*Bundle, []byte, erro
 	}
 
 	bundle := &Bundle{
-		SchemaVersion:  BundleSchemaVersion,
-		Target:         target,
-		WorkspaceState: workspaceState,
-		Rules:          make(map[string]Rule),
-		Files:          make([]File, 0, len(changes)),
-		Contract:       DefaultContract(),
+		SchemaVersion:   BundleSchemaVersion,
+		Target:          target,
+		WorkspaceState:  workspaceState,
+		ExcludePatterns: configuredExcludePatterns(options.FileFilter),
+		Rules:           make(map[string]Rule),
+		Files:           make([]File, 0, len(changes)),
+		Contract:        DefaultContract(),
 	}
 	bundle.Contract.MaxBundleBytes = maxBundleSize
 	buildBundleEvidence(bundle, changes, detailResolver, options.FileFilter)
@@ -96,6 +97,13 @@ func Prepare(ctx context.Context, options PrepareOptions) (*Bundle, []byte, erro
 		}
 	}
 	return bundle, encoded, nil
+}
+
+func configuredExcludePatterns(fileFilter *rules.FileFilter) []string {
+	if fileFilter == nil {
+		return nil
+	}
+	return append([]string(nil), fileFilter.Exclude...)
 }
 
 func loadTargetDiffs(ctx context.Context, options PrepareOptions) ([]model.Diff, error) {

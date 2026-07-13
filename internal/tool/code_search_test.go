@@ -37,11 +37,12 @@ func TestBuildGrepArgs_CommitMode(t *testing.T) {
 	assertNotContains(t, args, "--untracked")
 }
 
-func TestBuildGrepArgs_CommitModeUsesEndOfOptions(t *testing.T) {
+func TestBuildGrepArgs_CommitModeUsesCompatibleRevisionSeparator(t *testing.T) {
 	p := NewCodeSearch(&FileReader{RepoDir: "/tmp", Ref: "abc1234"})
 	args := p.buildGrepArgs("myFunc", false, false, false, nil)
 
-	assertContainsInOrder(t, args, "--end-of-options", "abc1234", "--")
+	assertContainsInOrder(t, args, "abc1234", "--")
+	assertNotContains(t, args, "--end-of-options")
 }
 
 func TestBuildGrepArgs_PatternStartingWithDash(t *testing.T) {

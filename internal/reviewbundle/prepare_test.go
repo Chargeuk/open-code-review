@@ -152,6 +152,7 @@ func TestPreparePartitionedSplitsLargeDiffWithoutDuplicates(t *testing.T) {
 	manifest, encoded, err := PreparePartitioned(context.Background(), PrepareOptions{
 		RepoDir:       repository,
 		Resolver:      detailResolverStub{},
+		FileFilter:    &rules.FileFilter{Exclude: []string{"planning/**"}},
 		GitRunner:     gitcmd.New(2),
 		MaxBundleSize: 3200,
 	})
@@ -164,6 +165,9 @@ func TestPreparePartitionedSplitsLargeDiffWithoutDuplicates(t *testing.T) {
 	}
 	seen := make(map[string]bool)
 	for _, bundle := range manifest.Bundles {
+		if len(bundle.ExcludePatterns) != 1 || bundle.ExcludePatterns[0] != "planning/**" {
+			t.Errorf("bundle exclude patterns = %v", bundle.ExcludePatterns)
+		}
 		if bundle.Contract.BundleSizeBytes > 3200 {
 			t.Errorf("bundle size = %d, want <= 3200", bundle.Contract.BundleSizeBytes)
 		}
